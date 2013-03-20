@@ -11,6 +11,7 @@ import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.os.Bundle;
+import android.view.MotionEvent;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
@@ -26,12 +27,19 @@ public class Main extends IOIOActivity implements SensorEventListener {
 	private Button b4;
 	private Button b5;
 	
+	private Button turnLeftButton;
+	private Button turnRightButton;
+	
 	private ProgressBar pbm1;
 	private ProgressBar pbm2;
 	private ProgressBar pbm3;
 	private ProgressBar pbm4;
 	
 	private int tiltAmount = 100;
+	private int turnAmount = 50;
+	
+	private boolean turningRight = false;
+	private boolean turningLeft = false;
 	
 	private int prog1 = 0;
 	private int motor1 = 0;
@@ -77,6 +85,9 @@ public class Main extends IOIOActivity implements SensorEventListener {
         b4 = (Button)findViewById(R.id.button4);
         b5 = (Button)findViewById(R.id.button5);
         
+        turnRightButton = (Button)findViewById(R.id.turnRightButton);
+        turnLeftButton = (Button)findViewById(R.id.turnLeftButton);
+        
         sb1.setOnSeekBarChangeListener(new SeekBar.OnSeekBarChangeListener() {
 			@Override public void onStopTrackingTouch(SeekBar seekBar) {}
 			@Override public void onStartTrackingTouch(SeekBar seekBar) {}
@@ -120,6 +131,32 @@ public class Main extends IOIOActivity implements SensorEventListener {
 			@Override
 			public void onClick(View v) {
 				sb1.setProgress(sb1.getProgress()-1);
+			}
+		});
+        
+        turnRightButton.setOnTouchListener(new View.OnTouchListener() {
+			
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if (event.getAction() == MotionEvent.ACTION_UP) {
+					turningRight = false;
+				} else if (event.getAction() == MotionEvent.ACTION_DOWN){
+					turningRight = true;
+				}
+				return false;
+			}
+		});
+        
+        turnLeftButton.setOnTouchListener(new View.OnTouchListener() {
+			
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				if (event.getAction() == MotionEvent.ACTION_UP) {
+					turningLeft = false;
+				} else if (event.getAction() == MotionEvent.ACTION_DOWN){
+					turningLeft = true;
+				}
+				return false;
 			}
 		});
         
@@ -214,8 +251,8 @@ public class Main extends IOIOActivity implements SensorEventListener {
 		RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams(16, 16);
 		int halfWidth = rl1.getWidth()/2;
 		int halfHeight = rl1.getHeight()/2;
-		params.leftMargin = (int)(tiltPos[0] * halfWidth + halfWidth - 8);
-		params.topMargin = (int)(-tiltPos[1] * halfHeight + halfHeight - 8);
+		params.leftMargin = (int)(-tiltPos[1] * halfWidth + halfWidth - 8);
+		params.topMargin = (int)(-tiltPos[0] * halfHeight + halfHeight - 8);
 		pb1.setLayoutParams(params);
 		
 		updateMotors();
@@ -230,15 +267,30 @@ public class Main extends IOIOActivity implements SensorEventListener {
 			motor3 -= tiltAmount * tiltPos[1];
 			motor4 -= tiltAmount * tiltPos[0];
 			
-			motor1 = Math.max(motor1,  500);
-			motor2 = Math.max(motor2,  500);
-			motor3 = Math.max(motor3,  500);
-			motor4 = Math.max(motor4,  500);
+
+			if (turningLeft) {
+				motor1 -= turnAmount;
+				motor2 += turnAmount;
+				motor3 -= turnAmount;
+				motor4 += turnAmount;
+			}
+			
+			if (turningRight) {
+				motor1 += turnAmount;
+				motor2 -= turnAmount;
+				motor3 += turnAmount;
+				motor4 -= turnAmount;
+			}
+			
+			motor1 = Math.min(Math.max(500, motor1), 1000);
+			motor2 = Math.min(Math.max(500, motor2), 1000);
+			motor3 = Math.min(Math.max(500, motor3), 1000);
+			motor4 = Math.min(Math.max(500, motor4), 1000);
 		}
 		
-		pbm1.setProgress(motor1);
-		pbm2.setProgress(motor2);
-		pbm3.setProgress(motor3);
-		pbm4.setProgress(motor4);
+		pbm1.setProgress((motor1 - 500)*2);
+		pbm2.setProgress((motor2 - 500)*2);
+		pbm3.setProgress((motor3 - 500)*2);
+		pbm4.setProgress((motor4 - 500)*2);
 	}
 }
